@@ -8,34 +8,33 @@ Encoder isn't ready yet :(
 
 ```console
 $ zig build bench -Doptimize=ReleaseFast
-bench.Impl.reference: 1881ms
-        testcard.qoi: 145μs±36
-        kodim10.qoi: 3380μs±190
-        dice.qoi: 1358μs±142
-        wikipedia_008.qoi: 10150μs±820
-        zero.qoi: 484μs±65
-        edgecase.qoi: 41μs±21
-        testcard_rgba.qoi: 168μs±47
-        kodim23.qoi: 3408μs±317
-        qoi_logo.qoi: 159μs±42
-bench.Impl.qoi: 1965ms
-        testcard.qoi: 216μs±66
-        kodim10.qoi: 4110μs±347
-        dice.qoi: 1672μs±312
-        wikipedia_008.qoi: 10548μs±858
-        zero.qoi: 677μs±128
-        edgecase.qoi: 71μs±44
-        testcard_rgba.qoi: 225μs±73
-        kodim23.qoi: 4090μs±494
-        qoi_logo.qoi: 213μs±78
-bench.Impl.zigqoi: 2252ms
-        testcard.qoi: 254μs±76
-        kodim10.qoi: 5212μs±293
-        dice.qoi: 2760μs±214
-        wikipedia_008.qoi: 13608μs±1130
-        zero.qoi: 792μs±55
-        edgecase.qoi: 50μs±23
-        testcard_rgba.qoi: 345μs±154
-        kodim23.qoi: 5121μs±531
-        qoi_logo.qoi: 254μs±85
-```
+bench.Impl.reference: 1888ms
+        testcard.qoi: 166μs±48
+        kodim10.qoi: 3453μs±285
+        dice.qoi: 1399μs±276
+        wikipedia_008.qoi: 9924μs±723
+        zero.qoi: 513μs±95
+        edgecase.qoi: 24μs±4
+        testcard_rgba.qoi: 181μs±71
+        kodim23.qoi: 3430μs±346
+        qoi_logo.qoi: 159μs±41
+bench.Impl.qoiz: 1955ms
+        testcard.qoi: 227μs±81
+        kodim10.qoi: 4051μs±488
+        dice.qoi: 1765μs±330
+        wikipedia_008.qoi: 10768μs±704
+        zero.qoi: 667μs±143
+        edgecase.qoi: 42μs±13
+        testcard_rgba.qoi: 207μs±40
+        kodim23.qoi: 4183μs±254
+        qoi_logo.qoi: 212μs±69
+bench.Impl.zigqoi: 2281ms
+        testcard.qoi: 284μs±94
+        kodim10.qoi: 5334μs±585
+        dice.qoi: 3035μs±353
+        wikipedia_008.qoi: 13790μs±869
+        zero.qoi: 877μs±217
+        edgecase.qoi: 36μs±11
+        testcard_rgba.qoi: 231μs±33
+        kodim23.qoi: 5518μs±386
+        qoi_logo.qoi: 227μs±54```

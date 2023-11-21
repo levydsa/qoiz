@@ -4,7 +4,7 @@ pub fn build(b: *std.Build) void {
     const target = b.standardTargetOptions(.{});
     const optimize = b.standardOptimizeOption(.{});
 
-    var qoi = b.addModule("qoi", .{ .source_file = .{ .path = "src/qoiz.zig" }});
+    _ = b.addModule("qoiz", .{ .source_file = .{ .path = "src/qoiz.zig" }});
 
     const bench = b.addExecutable(.{
         .name = "bench",
@@ -14,8 +14,7 @@ pub fn build(b: *std.Build) void {
     });
 
     b.installArtifact(bench);
-    bench.addModule("qoi", qoi);
-    bench.addCSourceFile(.{ .file = .{ .path = "src/bench/qoi_impl.c" }, .flags = &.{ "-ggdb", "-O3" } });
+    bench.addCSourceFile(.{ .file = .{ .path = "src/bench/qoi_impl.c" }, .flags = &.{ "-O3" } });
     bench.addIncludePath(.{ .path = "src/" });
     bench.linkLibC();
 
@@ -33,8 +32,6 @@ pub fn build(b: *std.Build) void {
         .target = target,
         .optimize = optimize,
     });
-
-    unit_tests.addModule("qoi", qoi);
 
     {
         const run = b.addRunArtifact(unit_tests);
