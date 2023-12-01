@@ -37,4 +37,5 @@ bench.Impl.zigqoi: 2281ms
         edgecase.qoi: 36μs±11
         testcard_rgba.qoi: 231μs±33
         kodim23.qoi: 5518μs±386
-        qoi_logo.qoi: 227μs±54```
+        qoi_logo.qoi: 227μs±54
+```
