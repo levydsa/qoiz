@@ -18,7 +18,7 @@ const Impl = enum {
 pub fn benchmark(comptime impl: Impl, source: []const u8, gpa: mem.Allocator) !qoi.Image(.rgba) {
     switch (impl) {
         .zigqoi => {
-            var image = try zqoi.decodeBuffer(gpa, source);
+            const image = try zqoi.decodeBuffer(gpa, source);
             return qoi.Image(.rgba){
                 .allocator = gpa,
                 .width = image.width,
@@ -31,9 +31,9 @@ pub fn benchmark(comptime impl: Impl, source: []const u8, gpa: mem.Allocator) !q
         },
         .reference => {
             var desc: c.qoi_desc = undefined;
-            var pixels: [*]u8 = @ptrCast(c.qoi_decode(source.ptr, @intCast(source.len), &desc, 4).?);
+            const pixels: [*]u8 = @ptrCast(c.qoi_decode(source.ptr, @intCast(source.len), &desc, 4).?);
 
-            var image = qoi.Image(.rgba){
+            const image = qoi.Image(.rgba){
                 .allocator = std.heap.raw_c_allocator,
                 .width = desc.width,
                 .height = desc.height,
