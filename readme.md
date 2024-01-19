@@ -1,8 +1,22 @@
 
 # `qoiz`
 
-Decoder from the qoi image format.
-Encoder isn't ready yet :(
+A simple implementation of the QOI image format decoder and encoder.
+
+The implementation is centered around the concept of:
+
+- Span
+    Group of pixels with the same value.
+
+- Chunks
+    Regular QOI Chunk
+
+- Image
+    Holds the format and pixels information of a image.
+
+Raw Image -> Span Iterator -> Chunk Iterator -> QOI Image
+
+QOI Image -> Chunk Iterator -> Span Iterator -> Raw Image
 
 ## Benchmark
 
