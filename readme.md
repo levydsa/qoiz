@@ -1,5 +1,5 @@
 
-# `qoiz`
+![](doc/qoiz.svg)
 
 A simple implementation of the QOI image format decoder and encoder.
 
