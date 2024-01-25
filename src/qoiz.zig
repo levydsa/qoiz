@@ -1,26 +1,77 @@
 const std = @import("std");
+
 const mem = std.mem;
 const io = std.io;
+const fs = std.fs;
+const testing = std.testing;
+
+const assert = std.debug.assert;
+
 const Allocator = mem.Allocator;
 const StreamSource = io.StreamSource;
 
 pub const decoder = @import("decoder.zig");
 pub const encoder = @import("encoder.zig");
 
-pub const Header = packed struct {
-    magic: u32 = mem.bytesToValue(u32, "qoif"),
-    width: u32,
-    height: u32,
-    channels: Channels,
-    colorspace: Colorspace,
+pub const Header = extern struct {
+    magic: [4]u8 align(1) = "qoif".*,
+    width: u32 align(1),
+    height: u32 align(1),
+    channels: Channels  = .rgba,
+    colorspace: Colorspace  = .linear,
 
-    const Channels = enum(u8) { rgb = 3, rgba = 4 };
-    const Colorspace = enum(u8) { srgb = 0, linear = 1 };
+    pub const Channels = enum(u8) { rgb = 3, rgba = 4 };
+    pub const Colorspace = enum(u8) { srgb = 0, linear = 1 };
+
+    pub const Error = error{
+        InvalidMagic,
+        InvalidChannel,
+        InvalidColorspace,
+    } || error{EndOfStream};
+
+    comptime {
+        assert(@sizeOf(Header) == 14);
+    }
+
+    pub fn encode(self: Header) [@sizeOf(Header)]u8 {
+        var out = self;
+
+        out.width = mem.nativeTo(u32, self.width, .big);
+        out.height = mem.nativeTo(u32, self.height, .big);
+
+        return mem.toBytes(out);
+    }
+
+    pub fn fromBytes(bytes: [@sizeOf(Header)]u8) Error!Header {
+        var stream = io.fixedBufferStream(&bytes);
+        var reader = stream.reader();
+
+        if (!try reader.isBytes("qoif")) return error.InvalidMagic;
+
+        const width = try reader.readInt(u32, .big);
+        const height = try reader.readInt(u32, .big);
+
+        const channels = std.meta.intToEnum(Channels, try reader.readByte()) catch {
+            return error.InvalidChannel;
+        };
+
+        const colorspace = std.meta.intToEnum(Colorspace, try reader.readByte()) catch {
+            return error.InvalidColorspace;
+        };
+
+        return .{
+            .width = width,
+            .height = height,
+            .channels = channels,
+            .colorspace = colorspace,
+        };
+    }
 };
 
 pub const Span = struct {
     value: Pixel,
     len: u6 = 1,
+
 };
 
 pub const Chunk = union(enum) {
@@ -30,6 +81,15 @@ pub const Chunk = union(enum) {
     diff: Diff,
     luma: Luma,
     run: Run,
+
+    comptime {
+        assert(@bitSizeOf(Rgb) == 8*4);
+        assert(@bitSizeOf(Rgba) == 8*5);
+        assert(@bitSizeOf(Index) == 8*1);
+        assert(@bitSizeOf(Run) == 8*1);
+        assert(@bitSizeOf(Luma) == 8*2);
+        assert(@bitSizeOf(Diff) == 8*1);
+    }
 
     pub const Rgb = packed struct { tag: u8 = 0b1111_1110, r: u8, g: u8, b: u8 };
     pub const Rgba = packed struct { tag: u8 = 0b1111_1111, r: u8, g: u8, b: u8, a: u8 };
@@ -159,17 +219,29 @@ pub const Pixel = packed struct {
 
 pub fn Image(comptime format: Format) type {
     return struct {
-        width: u32,
-        height: u32,
         allocator: Allocator,
         pixels: []format.Type(),
+        width: u32,
+        height: u32,
+
+        header: Header,
 
         const Self = @This();
+
+        pub fn initReader(allocator: Allocator, reader: anytype) !Self {
+            const source = try reader.readAllAlloc(allocator, std.math.maxInt(usize));
+            defer allocator.free(source);
+
+            return Self.init(allocator, source);
+        }
 
         pub fn init(allocator: Allocator, source: []const u8) !Self {
             var spans = try decoder.SpanIterator.init(source);
 
-            var pixels = try allocator.alloc(format.Type(), spans.width * spans.height);
+            const width = spans.header.width;
+            const height = spans.header.height;
+
+            var pixels = try allocator.alloc(format.Type(), width * height);
             var pos: usize = 0;
 
             while (try spans.next()) |span| : (pos += span.len) {
@@ -179,10 +251,11 @@ pub fn Image(comptime format: Format) type {
             }
 
             return .{
-                .pixels = pixels,
-                .width = spans.width,
-                .height = spans.height,
                 .allocator = allocator,
+                .pixels = pixels,
+                .width = width,
+                .height = height,
+                .header = spans.header,
             };
         }
 
@@ -193,31 +266,154 @@ pub fn Image(comptime format: Format) type {
         }
 
         pub fn encode(self: *const Self, allocator: Allocator) ![]u8 {
-            var chunks = std.ArrayList(u8).init(allocator);
-            var iter = encoder.ChunkIterator(format){
+            var out = std.ArrayList(u8).init(allocator);
+            var writer = out.writer();
+
+            try writer.writeAll(&self.header.encode());
+
+            var chunks = encoder.ChunkIterator(format){
                 .pixels = self.pixels,
             };
 
-            try chunks.writer().writeStruct(Header{
-                .width = self.width,
-                .height = self.height,
-                .colorspace = .linear,
-                .channels = .rgba,
-            });
-
-            while (iter.next()) |chunk| {
+            while (chunks.next()) |chunk| {
                 switch (chunk) {
-                    inline else => |v| try chunks.writer().writeStruct(v),
+                    inline else => |v| {
+                        const size = @divExact(@bitSizeOf(@TypeOf(v)), 8);
+                        const bytes = mem.toBytes(v)[0..size];
+                        try writer.writeAll(bytes);
+                    },
                 }
             }
 
-            try chunks.writer().writeAll(&.{ 0, 0, 0, 0, 0, 0, 0, 1 });
+            try writer.writeAll(&.{ 0, 0, 0, 0, 0, 0, 0, 1 });
 
-            return chunks.toOwnedSlice();
+            return out.toOwnedSlice();
         }
 
         pub fn deinit(self: *const Self) void {
             self.allocator.free(self.pixels);
         }
     };
+}
+
+test {
+    std.testing.refAllDecls(@This());
+}
+
+test "image init reader" {
+    const file = try fs.cwd().openFile("src/bench/data/dice.qoi", .{});
+    defer file.close();
+
+    const image = try Image(.rgb).initReader(testing.allocator, file.reader());
+    defer image.deinit();
+}
+
+test "chunk iterator encoder and decoder" {
+    const source = @embedFile("bench/data/dice.qoi");
+
+    const image = try Image(.rgba).init(testing.allocator, source);
+    defer image.deinit();
+
+    const encoded: []u8 = try image.encode(testing.allocator);
+    defer testing.allocator.free(encoded);
+
+    var source_chunks = decoder.ChunkIterator{
+        .buffer = source,
+        .pos = 14,
+    };
+
+    var encoded_chunks = encoder.ChunkIterator(.rgba){
+        .pixels = image.pixels,
+    };
+
+    while (source_chunks.next()) |source_chunk| {
+        const encoded_chunk = encoded_chunks.next().?;
+
+        try testing.expectEqual(source_chunk, encoded_chunk);
+    }
+}
+
+test "image decode by reference" {
+    const bench = @import("bench.zig");
+
+    var dir = try std.fs.cwd().openDir("src/bench/data/", .{ .iterate = true });
+    defer dir.close();
+    var entries = dir.iterate();
+
+    while (try entries.next()) |entry| if (entry.kind == .file) {
+        const file = try entries.dir.readFileAlloc(testing.allocator, entry.name, std.math.maxInt(usize));
+        defer testing.allocator.free(file);
+
+        var reference = try bench.decode(.reference, file, testing.allocator);
+        defer reference.deinit();
+
+        var image = try Image(.rgba).init(testing.allocator, file);
+        defer image.deinit();
+
+        for (reference.pixels, image.pixels, 0..) |ref, img, i| {
+            std.testing.expectEqual(ref, img) catch |e| {
+                std.debug.print("{d}: {} {}", .{ i, ref, img });
+                return e;
+            };
+        }
+    };
+}
+
+test "chunks" {
+    // zig fmt: off
+    const bytes = [_]u8{
+        0b00_000001,
+        0b01_01_10_11,
+        0b10_000001, 0b0010_0011,
+        0b11_100000,
+        0b11_000001,
+        0b1111_1110, 1, 2, 3,
+        0b1111_1111, 1, 2, 3, 4,
+        0xfe, 0x1d, 0x34, 0x63,
+        0, 0, 0, 0, 0, 0, 0, 1,
+    };
+    // zig fmt: on
+
+    const expected = [_]Chunk{
+        .{ .index = .{ .index = 1 } },
+        .{ .diff = .{ .dr = 1, .dg = 2, .db = 3 } },
+        .{ .luma = .{ .dg = 1, .dr_dg = 2, .db_dg = 3 } },
+        .{ .run = .{ .run = 32 } },
+        .{ .run = .{ .run = 1 } },
+        .{ .rgb = .{ .r = 1, .g = 2, .b = 3 } },
+        .{ .rgba = .{ .r = 1, .g = 2, .b = 3, .a = 4 } },
+    };
+
+    var chunks = decoder.ChunkIterator{ .buffer = &bytes };
+
+    for (expected) |e| try testing.expectEqual(e, chunks.next().?);
+}
+
+test "encoder" {
+    const source: []const u8 = @embedFile("bench/data/dice.qoi");
+
+    const image = try Image(.rgba).init(testing.allocator, source);
+    defer image.deinit();
+
+    const encoded = try image.encode(testing.allocator);
+    defer testing.allocator.free(encoded);
+
+    try testing.expect(mem.eql(u8, source, encoded));
+}
+
+test "operations" {
+    assert(std.meta.eql(
+        (Chunk.Diff{ .dr = 3, .dg = 2, .db = 1 }).apply(
+            Pixel{ .r = 10, .g = 10, .b = 10 },
+        ),
+        Pixel{ .r = 11, .g = 10, .b = 9 },
+    ));
+
+    const p1 = Pixel{ .r = 206, .g = 236, .b = 206, .a = 27 };
+    const p2 = Pixel{ .r = 206, .g = 241, .b = 206, .a = 27 };
+
+    try testing.expectEqual(
+        Chunk.Luma{ .dg = 37, .db_dg = 3, .dr_dg = 3 },
+        p2.luma(p1).?,
+    );
 }

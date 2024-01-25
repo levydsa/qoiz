@@ -3,7 +3,7 @@ const assert = std.debug.assert;
 const mem = std.mem;
 const io = std.io;
 const c = @cImport({
-    @cInclude("bench/qoi.h");
+    @cInclude("qoi.h");
 });
 const zigqoi = @import("bench/zig-qoi.zig");
 const qoi = @import("qoiz.zig");
@@ -71,6 +71,7 @@ pub fn decode(comptime impl: Impl, source: []const u8, gpa: mem.Allocator) !qoi.
                 .width = image.width,
                 .height = image.height,
                 .pixels = @alignCast(@ptrCast(image.pixels)),
+                .header = undefined,
             };
         },
         .qoiz => {
@@ -90,6 +91,7 @@ pub fn decode(comptime impl: Impl, source: []const u8, gpa: mem.Allocator) !qoi.
                     slice.len = desc.width * desc.height;
                     break :pixels slice;
                 },
+                .header = undefined,
             };
 
             return image;
@@ -132,8 +134,10 @@ pub fn main() !void {
             defer reference.deinit();
 
             var timer = try std.time.Timer.start();
+
             var image = try decode(impl, file, gpa.allocator());
             defer image.deinit();
+
             try time.put(entry.name, (time.get(entry.name) orelse MinMax{}).new(timer.lap() / std.time.ns_per_us));
 
             for (reference.pixels, image.pixels, 0..) |ref, img, i| {

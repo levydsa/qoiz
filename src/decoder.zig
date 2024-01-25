@@ -40,27 +40,19 @@ pub const SpanIterator = struct {
     seen: [64]Pixel = mem.zeroes([64]Pixel),
     previous: Pixel = .{ .r = 0, .g = 0, .b = 0 },
     pixel_count: usize,
-    width: u32,
-    height: u32,
+    header: Header,
 
     /// Extract QOI header and iterate over the span of pixels
-    pub fn init(source: []const u8) !SpanIterator {
-        var header: Header = @bitCast(source[0..14].*);
-
-        if (header.magic != mem.bytesToValue(u32, "qoif"))
-            return error.InvalidMagic;
-
-        header.width = mem.toNative(u32, header.width, .big);
-        header.height = mem.toNative(u32, header.height, .big);
+    pub fn init(source: []const u8) Header.Error!SpanIterator {
+        const header = try Header.fromBytes(source[0..14].*);
 
         return .{
             .chunks = ChunkIterator{
                 .buffer = source,
                 .pos = 14,
             },
-            .width = header.width,
-            .height = header.height,
             .pixel_count = header.width * header.height,
+            .header = header,
         };
     }
 

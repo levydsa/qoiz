@@ -18,6 +18,24 @@ Raw Image -> Span Iterator -> Chunk Iterator -> QOI Image
 
 QOI Image -> Chunk Iterator -> Span Iterator -> Raw Image
 
+```zig
+test "from bytes" {
+
+    const source = @embedFile("ziguana.qoi")
+
+    const image = qoiz.Image(.rgba).init(source, std.testing.allocator);
+    image.flipX();
+}
+
+test "from stream" {
+
+    const source = @embedFile("ziguana.qoi")
+
+    const image = qoiz.Image(.rgba).init(source, std.testing.allocator);
+    image.flipX();
+}
+```
+
 ## Benchmark
 
 ```console
