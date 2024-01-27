@@ -17,8 +17,8 @@ pub const Header = extern struct {
     magic: [4]u8 align(1) = "qoif".*,
     width: u32 align(1),
     height: u32 align(1),
-    channels: Channels  = .rgba,
-    colorspace: Colorspace  = .linear,
+    channels: Channels = .rgba,
+    colorspace: Colorspace = .linear,
 
     pub const Channels = enum(u8) { rgb = 3, rgba = 4 };
     pub const Colorspace = enum(u8) { srgb = 0, linear = 1 };
@@ -71,7 +71,6 @@ pub const Header = extern struct {
 pub const Span = struct {
     value: Pixel,
     len: u6 = 1,
-
 };
 
 pub const Chunk = union(enum) {
@@ -83,12 +82,12 @@ pub const Chunk = union(enum) {
     run: Run,
 
     comptime {
-        assert(@bitSizeOf(Rgb) == 8*4);
-        assert(@bitSizeOf(Rgba) == 8*5);
-        assert(@bitSizeOf(Index) == 8*1);
-        assert(@bitSizeOf(Run) == 8*1);
-        assert(@bitSizeOf(Luma) == 8*2);
-        assert(@bitSizeOf(Diff) == 8*1);
+        assert(@bitSizeOf(Rgb) == 8 * 4);
+        assert(@bitSizeOf(Rgba) == 8 * 5);
+        assert(@bitSizeOf(Index) == 8 * 1);
+        assert(@bitSizeOf(Run) == 8 * 1);
+        assert(@bitSizeOf(Luma) == 8 * 2);
+        assert(@bitSizeOf(Diff) == 8 * 1);
     }
 
     pub const Rgb = packed struct { tag: u8 = 0b1111_1110, r: u8, g: u8, b: u8 };
