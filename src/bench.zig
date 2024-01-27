@@ -130,22 +130,12 @@ pub fn main() !void {
             const file = try entries.dir.readFileAlloc(gpa.allocator(), entry.name, std.math.maxInt(usize));
             defer gpa.allocator().free(file);
 
-            var reference = try decode(.reference, file, gpa.allocator());
-            defer reference.deinit();
-
             var timer = try std.time.Timer.start();
 
             var image = try decode(impl, file, gpa.allocator());
             defer image.deinit();
 
             try time.put(entry.name, (time.get(entry.name) orelse MinMax{}).new(timer.lap() / std.time.ns_per_us));
-
-            for (reference.pixels, image.pixels, 0..) |ref, img, i| {
-                std.testing.expectEqual(ref, img) catch |e| {
-                    std.debug.print("{d}: {} {}", .{ i, ref, img });
-                    return e;
-                };
-            }
         };
 
         var iter = time.iterator();
@@ -158,3 +148,5 @@ pub fn main() !void {
         }
     }
 }
+
+

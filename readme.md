@@ -1,38 +1,19 @@
 
 ![](doc/qoiz.svg)
 
-A simple implementation of the QOI image format decoder and encoder.
+A simple and fast implementation of the QOI image format decoder and encoder.
 
-The implementation is centered around the concept of:
-
-- Span
-    Group of pixels with the same value.
-
-- Chunks
-    Regular QOI Chunk
-
-- Image
-    Holds the format and pixels information of a image.
-
-Raw Image -> Span Iterator -> Chunk Iterator -> QOI Image
-
-QOI Image -> Chunk Iterator -> Span Iterator -> Raw Image
+## Examples
 
 ```zig
-test "from bytes" {
+const qoiz = @import("qoiz");
 
-    const source = @embedFile("ziguana.qoi")
+test "image init reader" {
+    const file = try fs.cwd().openFile("src/bench/data/dice.qoi", .{});
+    defer file.close();
 
-    const image = qoiz.Image(.rgba).init(source, std.testing.allocator);
-    image.flipX();
-}
-
-test "from stream" {
-
-    const source = @embedFile("ziguana.qoi")
-
-    const image = qoiz.Image(.rgba).init(source, std.testing.allocator);
-    image.flipX();
+    const image = try qoiz.Image(.rgb).initReader(testing.allocator, file.reader());
+    defer image.deinit();
 }
 ```
 

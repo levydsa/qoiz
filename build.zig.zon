@@ -1,5 +1,11 @@
 .{
 	.name = "qoiz",
 	.version = "0.1.0",
-	.paths = .{ "" },
+	.paths = .{
+		"src",
+		"build.zig",
+		"build.zig.zon",
+		"readme.md",
+		"LICENSE",
+	},
 }
