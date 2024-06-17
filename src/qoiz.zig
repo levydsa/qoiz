@@ -168,14 +168,6 @@ pub const Pixel = packed struct {
     b: u8,
     a: u8 = 0xff,
 
-    pub fn dot(a: @Vector(4, u8), b: @Vector(4, u8)) u8 {
-        return @reduce(.Add, a *% b);
-    }
-
-    pub fn vector(self: Pixel) @Vector(4, u8) {
-        return @bitCast(self);
-    }
-
     inline fn fits(comptime T: type, mid: anytype) bool {
         return std.math.minInt(T) <= mid and mid <= std.math.maxInt(T);
     }
@@ -212,7 +204,12 @@ pub const Pixel = packed struct {
     }
 
     pub fn hash(self: Pixel) u6 {
-        return @truncate(dot(self.vector(), .{ 3, 5, 7, 11 }));
+        return @truncate(
+            self.r *% 3 +%
+            self.g *% 5 +%
+            self.b *% 7 +%
+            self.a *% 11
+        );
     }
 };
 
