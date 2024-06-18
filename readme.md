@@ -20,35 +20,42 @@ test "image init reader" {
 ## Benchmark
 
 ```console
-$ zig build bench -Doptimize=ReleaseFast
-bench.Impl.reference: 1888ms
-        testcard.qoi: 166μs±48
-        kodim10.qoi: 3453μs±285
-        dice.qoi: 1399μs±276
-        wikipedia_008.qoi: 9924μs±723
-        zero.qoi: 513μs±95
-        edgecase.qoi: 24μs±4
-        testcard_rgba.qoi: 181μs±71
-        kodim23.qoi: 3430μs±346
-        qoi_logo.qoi: 159μs±41
-bench.Impl.qoiz: 1955ms
-        testcard.qoi: 227μs±81
-        kodim10.qoi: 4051μs±488
-        dice.qoi: 1765μs±330
-        wikipedia_008.qoi: 10768μs±704
-        zero.qoi: 667μs±143
-        edgecase.qoi: 42μs±13
-        testcard_rgba.qoi: 207μs±40
-        kodim23.qoi: 4183μs±254
-        qoi_logo.qoi: 212μs±69
-bench.Impl.zigqoi: 2281ms
-        testcard.qoi: 284μs±94
-        kodim10.qoi: 5334μs±585
-        dice.qoi: 3035μs±353
-        wikipedia_008.qoi: 13790μs±869
-        zero.qoi: 877μs±217
-        edgecase.qoi: 36μs±11
-        testcard_rgba.qoi: 231μs±33
-        kodim23.qoi: 5518μs±386
-        qoi_logo.qoi: 227μs±54
+$ zig build bench --release=fast -- qoiz 1028
+         dice : dec.  1.182ms ±σ  0.046ms | enc.  2.258ms ±σ  1.181ms
+     edgecase : dec.  0.015ms ±σ  0.001ms | enc.  0.038ms ±σ  0.015ms
+      kodim10 : dec.  3.760ms ±σ  0.136ms | enc.  7.463ms ±σ  3.744ms
+      kodim23 : dec.  3.696ms ±σ  0.035ms | enc.  7.384ms ±σ  3.695ms
+     qoi_logo : dec.  0.078ms ±σ  0.002ms | enc.  0.188ms ±σ  0.078ms
+     testcard : dec.  0.123ms ±σ  0.004ms | enc.  0.255ms ±σ  0.123ms
+testcard_rgba : dec.  0.132ms ±σ  0.004ms | enc.  0.271ms ±σ  0.132ms
+wikipedia_008 : dec.  9.707ms ±σ  0.167ms | enc. 19.508ms ±σ  9.680ms
+         zero : dec.  0.378ms ±σ  0.023ms | enc.  0.772ms ±σ  0.378ms
+```
+
+Another library for zig made by @ikskuh
+```console
+$ zig build bench --release=fast -- zigqoi 1028
+         dice : dec.  2.477ms ±σ  0.086ms | enc.  2.617ms ±σ  2.471ms
+     edgecase : dec.  0.019ms ±σ  0.001ms | enc.  0.064ms ±σ  0.019ms
+      kodim10 : dec.  4.468ms ±σ  0.082ms | enc.  6.644ms ±σ  4.462ms
+      kodim23 : dec.  4.502ms ±σ  0.131ms | enc.  6.668ms ±σ  4.486ms
+     qoi_logo : dec.  0.117ms ±σ  0.004ms | enc.  0.333ms ±σ  0.117ms
+     testcard : dec.  0.162ms ±σ  0.005ms | enc.  0.321ms ±σ  0.162ms
+testcard_rgba : dec.  0.178ms ±σ  0.004ms | enc.  0.309ms ±σ  0.178ms
+wikipedia_008 : dec. 12.448ms ±σ  0.251ms | enc. 16.965ms ±σ 12.387ms
+         zero : dec.  0.542ms ±σ  0.011ms | enc.  1.062ms ±σ  0.542ms
+```
+
+Reference implementation in C
+```console
+$ zig build bench --release=fast -- reference 1028
+         dice : dec.  1.236ms ±σ  0.046ms | enc.  1.535ms ±σ  1.235ms
+     edgecase : dec.  0.027ms ±σ  0.002ms | enc.  0.037ms ±σ  0.027ms
+      kodim10 : dec.  3.230ms ±σ  0.065ms | enc.  3.157ms ±σ  3.226ms
+      kodim23 : dec.  3.165ms ±σ  0.055ms | enc.  3.021ms ±σ  3.162ms
+     qoi_logo : dec.  0.148ms ±σ  0.005ms | enc.  0.246ms ±σ  0.148ms
+     testcard : dec.  0.139ms ±σ  0.005ms | enc.  0.191ms ±σ  0.139ms
+testcard_rgba : dec.  0.146ms ±σ  0.005ms | enc.  0.204ms ±σ  0.146ms
+wikipedia_008 : dec.  8.343ms ±σ  0.123ms | enc.  9.346ms ±σ  8.329ms
+         zero : dec.  0.496ms ±σ  0.015ms | enc.  0.766ms ±σ  0.496ms
 ```

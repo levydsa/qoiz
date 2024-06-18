@@ -136,7 +136,26 @@ pub fn main() !void {
     var args = std.process.args();
     _ = args.skip();
 
-    const impl = std.meta.stringToEnum(Impl, args.next().?).?;
+    const impl = std.meta.stringToEnum(Impl, args.next() orelse {
+        std.debug.panic("specify a implementation: {s}", .{fields: {
+            const fields = @typeInfo(Impl).Enum.fields;
+            var names = [1][:0]const u8{undefined} ** 3;
+
+            inline for (fields, &names) |field, *name| {
+                name.* = field.name;
+            }
+
+            break :fields names;
+        }});
+    }).?;
+
+    const sample_count = try std.fmt.parseInt(
+        usize,
+        args.next() orelse {
+            std.debug.panic("specify a sample count", .{});
+        },
+        0,
+    );
 
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
     defer std.debug.assert(gpa.deinit() == .ok);
@@ -189,10 +208,11 @@ pub fn main() !void {
     };
 
     for (buffers.allocatedSlice()[0..files.len], names) |buffer, name| {
+        var samples_decode: []f64 = try arena.allocator().alloc(f64, sample_count);
+        defer arena.allocator().free(samples_decode);
 
-        const sample_count = 10;
-        var samples_decode: [sample_count]f64 = undefined;
-        var samples_encode: [sample_count]f64 = undefined;
+        var samples_encode: []f64 = try arena.allocator().alloc(f64, sample_count);
+        defer arena.allocator().free(samples_encode);
 
         for (0..sample_count) |n| {
             var timer = try std.time.Timer.start();
@@ -208,23 +228,20 @@ pub fn main() !void {
             samples_encode[n] = std.math.lossyCast(f64, timer.lap()) / std.time.ns_per_ms;
         }
 
-        const decode_mean = mean(&samples_decode);
-        const decode_variance = variance(&samples_decode, decode_mean);
+        const decode_mean = mean(samples_decode);
+        const decode_variance = variance(samples_decode, decode_mean);
 
-        const encode_mean = mean(&samples_encode);
-        const encode_variance = variance(&samples_decode, decode_variance);
+        const encode_mean = mean(samples_encode);
+        const encode_variance = variance(samples_decode, decode_variance);
 
-        std.debug.print(
-            "{[name]s: >[len]} : dec. {[dec_mean]d: >6.3}ms ±σ {[dec_std]d: >6.3}ms | enc. {[enc_mean]d:.3}ms ±σ {[enc_std]d:.3}ms\n",
-            .{
-                .name = name,
-                .len = max_filename_len,
-                .dec_mean = decode_mean,
-                .dec_std = std.math.sqrt(decode_variance),
-                .enc_mean = encode_mean,
-                .enc_std = std.math.sqrt(encode_variance)
-            }
-        );
+        std.debug.print("{[name]s: >[len]} : dec. {[dec_mean]d: >6.3}ms ±σ {[dec_std]d: >6.3}ms | enc. {[enc_mean]d: >6.3}ms ±σ {[enc_std]d: >6.3}ms\n", .{
+            .name = name,
+            .len = max_filename_len,
+            .dec_mean = decode_mean,
+            .dec_std = std.math.sqrt(decode_variance),
+            .enc_mean = encode_mean,
+            .enc_std = std.math.sqrt(encode_variance),
+        });
     }
 
     // const dice = std.fs.cwd().readFileAlloc(
@@ -232,7 +249,6 @@ pub fn main() !void {
     //     "bench/data/dice.qoi",
     //     std.math.maxInt(usize),
     // );
-
 
     // inline for ([_]Impl{ .reference, .qoiz, .zigqoi }) |impl| {
     //     var ellapsed = try std.time.Timer.start();
