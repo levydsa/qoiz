@@ -1,5 +1,5 @@
 
-![](doc/qoiz.svg)
+<img align="right" src="doc/qoiz.svg">
 
 A simple and fast implementation of the QOI image format decoder and encoder.
 
