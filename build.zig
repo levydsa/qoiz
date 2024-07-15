@@ -15,10 +15,7 @@ pub fn build(b: *std.Build) void {
         .optimize = optimize,
     });
 
-    bench.addCSourceFile(.{
-        .file = b.path("src/bench/qoi_impl.c"),
-        .flags = &.{"-O3"},
-    });
+    bench.addCSourceFile(.{ .file = b.path("src/bench/qoi_impl.c") });
     bench.addIncludePath(b.path("src/bench/"));
     bench.linkLibC();
 
@@ -26,7 +23,7 @@ pub fn build(b: *std.Build) void {
         const run = b.addRunArtifact(bench);
         const install = b.addInstallArtifact(bench, .{});
 
-        const step =  b.step("bench", "Run benchmarks");
+        const step = b.step("bench", "Run benchmarks");
 
         step.dependOn(&install.step);
         step.dependOn(&run.step);
